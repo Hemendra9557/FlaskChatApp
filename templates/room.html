@@ -2,7 +2,7 @@
 <div id="room-container">
   <h1 id="home-header">Flask Chat 💬</h1>
   <div id="room-subsection">
-    <h2 id="room-code-display">Room Code: <span>{{room}}</span></h2>
+    <h2 id="room-code-display">Room Code: <span>{{ room }}</span></h2>
     <a href="/" id="leave-chat-btn">Leave the Chat</a>
   </div>
 
@@ -18,6 +18,9 @@
         id="message-input"
         name="message"
       />
+      <button type="button" id="start-audio-btn" onclick="startAudioInput()">
+        Start Audio
+      </button>
       <button type="submit" id="send-btn" onclick="sendMessage()">Send</button>
     </div>
   </div>
@@ -37,7 +40,7 @@
           <p class="member-activity">${message}</p>
         `;
       } else {
-        var senderIsUser = "{{user}}" === sender;
+        var senderIsUser = "{{ user }}" === sender;
         var content = `
           <li class="message-item ${
             senderIsUser ? "self-message-item" : "peer-message-item"
@@ -47,10 +50,58 @@
                 senderIsUser ? "muted-text" : "muted-text-white"
               }">${new Date().toLocaleString()}</small>
           </li>
-      `;
+        `;
+
+        // Speak out the incoming message
+        speakMessage(message);
       }
 
       messages.innerHTML += content;
+    }
+    function speakMessage(message) {
+      // Create a new SpeechSynthesisUtterance object
+      var msg = new SpeechSynthesisUtterance();
+      // Set the text to be spoken
+      msg.text = message;
+      // Speak the message
+      window.speechSynthesis.speak(msg);
+    }
+
+    function startAudioInput() {
+      const recognition = new webkitSpeechRecognition(); // for Chrome
+      recognition.lang = "en-US"; // Set language if needed
+      recognition.continuous = true; // Continuously listen for speech input
+      recognition.interimResults = true; // Get interim results
+
+      recognition.onresult = function (event) {
+        let interimTranscript = "";
+        let finalTranscript = "";
+
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const transcript = event.results[i][0].transcript;
+          if (event.results[i].isFinal) {
+            finalTranscript += transcript;
+          } else {
+            interimTranscript += transcript;
+          }
+        }
+
+        // Update message input with final transcript
+        document.getElementById("message-input").value = finalTranscript;
+        // Once audio is recognized and text is filled in input, you may choose to automatically send the message
+        sendMessage();
+      };
+
+      recognition.onerror = function (event) {
+        console.error("Speech recognition error:", event.error);
+      };
+
+      recognition.onend = function () {
+        // Optionally, restart recognition when it ends
+        recognition.start();
+      };
+
+      recognition.start();
     }
 
     function sendMessage() {
@@ -65,7 +116,7 @@
 
   {% for message in messages %}
   <script type="text/javascript">
-    createChatItem("{{message.message}}", "{{message.sender}}");
+    createChatItem("{{ message.message }}", "{{ message.sender }}");
   </script>
   {% endfor %}
 </div>

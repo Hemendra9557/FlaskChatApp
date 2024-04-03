@@ -1,17 +1,50 @@
-from flask import Flask, request, render_template, redirect, url_for, session
+import random
+from string import ascii_letters
+
+from deepl import Translator
+from flask import (Flask, jsonify, redirect, render_template, request, session,
+                   url_for)
 from flask_socketio import SocketIO, join_room, leave_room, send
 
 from utils import generate_room_code
 
-
+app = Flask(__name__)
+deepl_api_key = (
+    "e6f1d062-5229-463b-b11f-6945aa2b969f:fx"  # Replace with your actual DeepL API key
+)
+translator = Translator(deepl_api_key)
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'SDKFJSDFOWEIOF'
 socketio = SocketIO(app)
 
-
 rooms = {}
 
+# Function for translating text
+def translate_text(text, target_language):
+    translation = translator.translate_text(text, target_lang="fr")
+    return translation.text
 
+# Handle incoming message
+@socketio.on('message')
+def handle_message(text):
+    room = session.get('room')
+    name = session.get('name')
+
+    if room not in rooms:
+        return
+
+    original_message = text["message"]
+    translated_message = translate_text(original_message, target_language="fr")
+
+    message = {
+        "sender": name,
+        "message": translated_message  # Send the translated message instead of the original one
+    }
+
+    send(message, to=room)
+    rooms[room]["messages"].append(message)
+
+# Route for the home page
 @app.route('/', methods=["GET", "POST"])
 def home():
     session.clear()
@@ -49,7 +82,7 @@ def home():
     else:
         return render_template('home.html')
 
-
+# Route for the chat room
 @app.route('/room')
 def room():
     room = session.get('room')
@@ -61,7 +94,7 @@ def room():
     messages = rooms[room]['messages']
     return render_template('room.html', room=room, user=name, messages=messages)
 
-
+# Function to handle user connection
 @socketio.on('connect')
 def handle_connect():
     name = session.get('name')
@@ -79,23 +112,7 @@ def handle_connect():
     }, to=room)
     rooms[room]["members"] += 1
 
-
-@socketio.on('message')
-def handle_message(payload):
-    room = session.get('room')
-    name = session.get('name')
-
-    if room not in rooms:
-        return
-
-    message = {
-        "sender": name,
-        "message": payload["message"]
-    }
-    send(message, to=room)
-    rooms[room]["messages"].append(message)
-
-
+# Function to handle user disconnection
 @socketio.on('disconnect')
 def handle_disconnect():
     room = session.get("room")
@@ -111,7 +128,6 @@ def handle_disconnect():
         "message": f"{name} has left the chat",
         "sender": ""
     }, to=room)
-
 
 if __name__ == '__main__':
     socketio.run(app, debug=True)

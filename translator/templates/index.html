@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Voice-Assisted Chatbot 🎙️</title>
+  </head>
+  <body>
+    <h1>Voice-Assisted Chatbot 🎙️</h1>
+    <p>Ask Question, I am Listening...</p>
+    <button id="start-button">Start Recording</button>
+    <div id="chatbox"></div>
+
+    <script>
+      const startButton = document.getElementById("start-button");
+      const chatbox = document.getElementById("chatbox");
+      const SpeechRecognition =
+        window.SpeechRecognition || window.webkitSpeechRecognition;
+      const recognition = new SpeechRecognition();
+
+      recognition.continuous = false;
+      recognition.lang = "en-US";
+
+      startButton.addEventListener("click", () => {
+        recognition.start();
+      });
+
+      recognition.onresult = (event) => {
+        const userText = event.results[0][0].transcript;
+        chatbox.innerHTML += `<p style="font-size:24px;">🙋: ${userText}</p>`;
+
+        // Call translateText function to translate user's text
+        translateText(userText);
+      };
+
+      recognition.onerror = (event) => {
+        console.error("Error:", event.error);
+      };
+
+      // Function to handle translation response
+      function translateText(text) {
+        fetch("/generate_response", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ text: text }),
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            const aiText = data.ai_text;
+            const translatedText = data.translated_text;
+            chatbox.innerHTML += `<p style="font-size:24px;">🤖: ${translatedText}</p>`;
+            chatbox.innerHTML += `<p style="font-size:24px;">Translated: ${translatedText}</p>`;
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+          });
+      }
+    </script>
+  </body>
+</html>
