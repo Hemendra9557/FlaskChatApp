@@ -1,6 +1,7 @@
 import random
 from string import ascii_letters
 
+import pyttsx3  # Import pyttsx3 library for text-to-speech
 from deepl import Translator
 from flask import (Flask, jsonify, redirect, render_template, request, session,
                    url_for)
@@ -13,7 +14,6 @@ deepl_api_key = (
     "e6f1d062-5229-463b-b11f-6945aa2b969f:fx"  # Replace with your actual DeepL API key
 )
 translator = Translator(deepl_api_key)
-app = Flask(__name__)
 app.config['SECRET_KEY'] = 'SDKFJSDFOWEIOF'
 socketio = SocketIO(app)
 
@@ -23,6 +23,12 @@ rooms = {}
 def translate_text(text, target_language):
     translation = translator.translate_text(text, target_lang="fr")
     return translation.text
+
+# Function for speaking incoming message
+def speak_message(message):
+    engine = pyttsx3.init()  # Initialize the text-to-speech engine
+    engine.say(message)  # Speak the message
+    engine.runAndWait()  # Wait for the speech to finish
 
 # Handle incoming message
 @socketio.on('message')
@@ -40,6 +46,9 @@ def handle_message(text):
         "sender": name,
         "message": translated_message  # Send the translated message instead of the original one
     }
+
+    # Speak the incoming message
+    speak_message(translated_message)
 
     send(message, to=room)
     rooms[room]["messages"].append(message)

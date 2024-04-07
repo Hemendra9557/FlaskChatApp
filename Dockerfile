@@ -1,19 +1,18 @@
-# start by pulling the python image
-FROM python:3.8-alpine
+# Use an appropriate base image that includes Python
+FROM python:3.11
 
-# copy the requirements file into the image
-COPY ./requirements.txt /app/requirements.txt
-
-# switch working directory
+# Copy the current directory contents into the container at /app
+COPY . /app
+# Set the working directory inside the container
 WORKDIR /app
 
-# install the dependencies and packages in the requirements file
+
+
+# Install any dependencies required by your Flask application
 RUN pip install -r requirements.txt
 
-# copy every content from the local file to the image
-COPY . /app
+# Expose port 5000 to allow external access to your application
+EXPOSE $port
 
-# configure the container to run in an executed manner
-ENTRYPOINT [ "python" ]
-
-CMD ["main.py" ]
+# Set the default command to run your Flask application
+CMD gunicorn --workers=4  --bind 0.0.0.0:$port main:app

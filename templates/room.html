@@ -21,9 +21,13 @@
       <button type="button" id="start-audio-btn" onclick="startAudioInput()">
         Start Audio
       </button>
-      <button type="submit" id="send-btn" onclick="sendMessage()">Send</button>
+      <button type="button" id="send-btn" onclick="sendMessage()">Send</button>
+      <!-- Change type to "button" to prevent form submission -->
     </div>
   </div>
+
+  <div id="spoken-text"></div>
+  <!-- This div will display spoken text -->
 
   <script type="text/javascript">
     var socketio = io();
@@ -34,6 +38,7 @@
 
     function createChatItem(message, sender) {
       var messages = document.getElementById("messages");
+      var content;
 
       if (sender === "") {
         content = `
@@ -41,7 +46,7 @@
         `;
       } else {
         var senderIsUser = "{{ user }}" === sender;
-        var content = `
+        content = `
           <li class="message-item ${
             senderIsUser ? "self-message-item" : "peer-message-item"
           }">
@@ -53,25 +58,33 @@
         `;
 
         // Speak out the incoming message
-        speakMessage(message);
+        //speakMessage(message);
       }
 
       messages.innerHTML += content;
     }
+
     function speakMessage(message) {
       // Create a new SpeechSynthesisUtterance object
       var msg = new SpeechSynthesisUtterance();
       // Set the text to be spoken
       msg.text = message;
-      // Speak the message
-      window.speechSynthesis.speak(msg);
+      // Speak the message after a short delay
+      setTimeout(function () {
+        window.speechSynthesis.speak(msg);
+      }, 100); // Adjust the delay as needed
     }
 
     function startAudioInput() {
-      const recognition = new webkitSpeechRecognition(); // for Chrome
+      const recognition =
+        new webkitSpeechRecognition() || new SpeechRecognition(); // Support for both old and new browser APIs
       recognition.lang = "en-US"; // Set language if needed
       recognition.continuous = true; // Continuously listen for speech input
       recognition.interimResults = true; // Get interim results
+
+      recognition.onstart = function () {
+        console.log("Speech recognition started");
+      };
 
       recognition.onresult = function (event) {
         let interimTranscript = "";
@@ -97,6 +110,7 @@
       };
 
       recognition.onend = function () {
+        console.log("Speech recognition ended");
         // Optionally, restart recognition when it ends
         recognition.start();
       };
