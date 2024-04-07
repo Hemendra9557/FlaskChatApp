@@ -1,5 +1,7 @@
-Flask
-Flask-SocketIO
-deepl
-requests
-typing
+Flask==2.0.2
+Flask-SocketIO==5.1.1
+deepl==2.0.1
+requests==2.26.0
+typing==3.7.4.3
+pyttsx3==2.90
+Werkzeug==1.0.1
